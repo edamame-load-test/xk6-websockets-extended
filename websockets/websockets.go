@@ -290,6 +290,18 @@ func (w *webSocket) establishConnection(params *wsParams) {
 
 	w.emitConnectionMetrics(ctx, start, connectionDuration)
 	if connErr != nil {
+
+		// extended metric wsFailedHandshakes
+		metrics.PushIfNotDone(ctx, state.Samples, metrics.Sample{
+			TimeSeries: metrics.TimeSeries{
+				Metric: w.wsMetrics.wsFailedHandshakes,
+				Tags:   w.tagsAndMeta.Tags,
+			},
+			Time:     time.Now(),
+			Metadata: w.tagsAndMeta.Metadata,
+			Value:    1,
+		})
+
 		// Pass the error to the user script before exiting immediately
 		w.tq.Queue(func() error {
 			return w.connectionClosedWithError(connErr)

@@ -28,15 +28,18 @@ type RootModule struct{}
 // WebSocketsAPI is the k6 extension implementing the websocket API as defined in https://websockets.spec.whatwg.org
 type WebSocketsAPI struct { //nolint:revive
 	vu modules.VU
+	wm wsMetrics
 }
 
 var _ modules.Module = &RootModule{}
 
 // NewModuleInstance returns a new instance of the module
 func (r *RootModule) NewModuleInstance(vu modules.VU) modules.Instance {
-	return &WebSocketsAPI{
-		vu: vu,
+	wm, err := registerMetrics(vu)
+	if err != nil {
+		common.Throw(vu.Runtime(), err)
 	}
+	return &WebSocketsAPI{vu: vu, wm: wm}
 }
 
 // Exports implements the modules.Instance interface's Exports
@@ -69,6 +72,7 @@ type webSocket struct {
 	tagsAndMeta    *metrics.TagsAndMeta
 	tq             *taskqueue.TaskQueue
 	builtinMetrics *metrics.BuiltinMetrics
+	wsMetrics      wsMetrics
 	obj            *goja.Object // the object that is given to js to interact with the WebSocket
 	started        time.Time
 
@@ -119,6 +123,7 @@ func (r *WebSocketsAPI) websocket(c goja.ConstructorCall) *goja.Object {
 		tq:             taskqueue.New(registerCallback),
 		readyState:     CONNECTING,
 		builtinMetrics: r.vu.State().BuiltinMetrics,
+		wsMetrics:      r.wm,
 		done:           make(chan struct{}),
 		writeQueueCh:   make(chan message, 10),
 		eventListeners: newEventListeners(),
@@ -462,6 +467,18 @@ func (w *webSocket) loop() {
 						Metadata: w.tagsAndMeta.Metadata,
 						Value:    1,
 					})
+
+					// extended metric wsBytesSent
+					metrics.PushIfNotDone(ctx, samplesOutput, metrics.Sample{
+						TimeSeries: metrics.TimeSeries{
+							Metric: w.wsMetrics.wsBytesSent,
+							Tags:   w.tagsAndMeta.Tags,
+						},
+						Time:     time.Now(),
+						Metadata: w.tagsAndMeta.Metadata,
+						Value:    float64(size),
+					})
+
 				case <-w.done:
 					return
 				}
@@ -539,6 +556,17 @@ func (w *webSocket) loop() {
 					Time:     msg.t,
 					Metadata: w.tagsAndMeta.Metadata,
 					Value:    1,
+				})
+
+				// extended metric wsBytesReceived
+				metrics.PushIfNotDone(ctx, samplesOutput, metrics.Sample{
+					TimeSeries: metrics.TimeSeries{
+						Metric: w.wsMetrics.wsBytesReceived,
+						Tags:   w.tagsAndMeta.Tags,
+					},
+					Time:     msg.t,
+					Metadata: w.tagsAndMeta.Metadata,
+					Value:    float64(len(msg.data)),
 				})
 
 				rt := w.vu.Runtime()

@@ -28,7 +28,7 @@ func registerMetrics(vu modules.VU) (wsMetrics, error) {
 		return m, errors.Unwrap(err)
 	}
 
-	if m.wsCurrentConnections, err = registry.NewMetric("ws_current_connections", metrics.Gauge, metrics.Data); err != nil {
+	if m.wsCurrentConnections, err = registry.NewMetric("ws_current_connections", metrics.Gauge); err != nil {
 		return m, errors.Unwrap(err)
 	}
 

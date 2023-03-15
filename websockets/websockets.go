@@ -33,6 +33,9 @@ type WebSocketsAPI struct { //nolint:revive
 
 var _ modules.Module = &RootModule{}
 
+// This is a counter for wsCurrentConnections
+var currentConnections float64
+
 // NewModuleInstance returns a new instance of the module
 func (r *RootModule) NewModuleInstance(vu modules.VU) modules.Instance {
 	wm, err := registerMetrics(vu)
@@ -308,6 +311,18 @@ func (w *webSocket) establishConnection(params *wsParams) {
 		})
 		w.tq.Close()
 		return
+	} else {
+		// extended metric wsCurrentConnections (increment)
+		currentConnections += 1
+		metrics.PushIfNotDone(w.vu.Context(), w.vu.State().Samples, metrics.Sample{
+			TimeSeries: metrics.TimeSeries{
+				Metric: w.wsMetrics.wsCurrentConnections,
+				Tags:   w.tagsAndMeta.Tags,
+			},
+			Time:     time.Now(),
+			Metadata: w.tagsAndMeta.Metadata,
+			Value:    currentConnections,
+		})
 	}
 	go w.loop()
 	w.tq.Queue(func() error {
@@ -369,6 +384,19 @@ func (w *webSocket) loop() {
 			Metadata: w.tagsAndMeta.Metadata,
 			Value:    duration,
 		})
+
+		// extended metric wsCurrentConnections (decrement)
+		currentConnections -= 1
+		metrics.PushIfNotDone(w.vu.Context(), w.vu.State().Samples, metrics.Sample{
+			TimeSeries: metrics.TimeSeries{
+				Metric: w.wsMetrics.wsCurrentConnections,
+				Tags:   w.tagsAndMeta.Tags,
+			},
+			Time:     time.Now(),
+			Metadata: w.tagsAndMeta.Metadata,
+			Value:    currentConnections,
+		})
+
 		ch := make(chan struct{})
 		w.tq.Queue(func() error {
 			defer close(ch)

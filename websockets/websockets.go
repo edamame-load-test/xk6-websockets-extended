@@ -400,20 +400,24 @@ func (w *webSocket) loop() {
 		for {
 			messageType, data, err := w.conn.ReadMessage()
 			if err != nil {
-				if !websocket.IsUnexpectedCloseError(
-					err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				// Code returns if error code is 1000 or 1001, because this is a non-error close
+				if !websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
 					return
 				}
-				/*
-					code := websocket.CloseGoingAway
-					if e, ok := err.(*websocket.CloseError); ok {
-						code = e.Code
-					}
-					select {
-					case readCloseChan <- code:
-					case <-w.done:
-					}
-				*/
+
+				// extended metric wsAbnormalClosureError (1006 close code)
+				if websocket.IsCloseError(err, websocket.CloseAbnormalClosure) {
+					metrics.PushIfNotDone(ctx, w.vu.State().Samples, metrics.Sample{
+						TimeSeries: metrics.TimeSeries{
+							Metric: w.wsMetrics.wsAbnormalClosureError,
+							Tags:   w.tagsAndMeta.Tags,
+						},
+						Time:     time.Now(),
+						Metadata: w.tagsAndMeta.Metadata,
+						Value:    1,
+					})
+				}
+
 				w.tq.Queue(func() error {
 					_ = w.conn.Close() // TODO fix this
 					// fmt.Println("read message", err)

@@ -8,11 +8,11 @@ import (
 )
 
 type wsMetrics struct {
-	wsBytesSent          *metrics.Metric
-	wsBytesReceived      *metrics.Metric
-	wsCurrentConnections *metrics.Metric
-	wsFailedHandshakes   *metrics.Metric
-	wsForcedDisconnects  *metrics.Metric
+	wsBytesSent            *metrics.Metric
+	wsBytesReceived        *metrics.Metric
+	wsCurrentConnections   *metrics.Metric
+	wsFailedHandshakes     *metrics.Metric
+	wsAbnormalClosureError *metrics.Metric
 }
 
 func registerMetrics(vu modules.VU) (wsMetrics, error) {
@@ -36,7 +36,7 @@ func registerMetrics(vu modules.VU) (wsMetrics, error) {
 		return m, errors.Unwrap(err)
 	}
 
-	if m.wsForcedDisconnects, err = registry.NewMetric("ws_forced_disconnects", metrics.Counter); err != nil {
+	if m.wsAbnormalClosureError, err = registry.NewMetric("ws_abnormal_closure_error", metrics.Counter); err != nil {
 		return m, errors.Unwrap(err)
 	}
 

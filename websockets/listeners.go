@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dop251/goja"
-	"github.com/grafana/xk6-websockets/websockets/events"
+	"github.com/edamame-load-test/xk6-websockets-extended/websockets/events"
 )
 
 // eventListeners keeps track of the eventListeners for each event type

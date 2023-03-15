@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
+	"github.com/edamame-load-test/xk6-websockets-extended/websockets/events"
 	"github.com/gorilla/websocket"
-	"github.com/grafana/xk6-websockets/websockets/events"
 	"github.com/mstoykov/k6-taskqueue-lib/taskqueue"
 
 	"go.k6.io/k6/js/common"

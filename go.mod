@@ -1,4 +1,4 @@
-module github.com/grafana/xk6-websockets
+module github.com/edamame-load-test/xk6-websockets-extended
 
 go 1.17
 

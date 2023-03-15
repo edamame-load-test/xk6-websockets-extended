@@ -2,7 +2,7 @@ GOLANGCI_LINT_VERSION = $(shell head -n 1 .golangci.yml | tr -d '\# ')
 TMPDIR ?= /tmp
 
 build: ## Build the binary
-	xk6 build --with github.com/grafana/xk6-websockets=. --with github.com/grafana/xk6-timers
+	xk6 build --with github.com/edamame-load-test/xk6-websockets-extended=. --with github.com/grafana/xk6-timers
 
 ws-echo-server-run: ## Run the ws-echo-server
 	docker run --detach --rm --name ws-echo-server -p 10000:8080 jmalloc/echo-server
